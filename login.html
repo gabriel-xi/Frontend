@@ -24,42 +24,35 @@
     </div>
 
     <script>
-        const BACKEND_URL = 'https://server-xpxp.onrender.com'; // Cambia con il tuo URL su Render
+        const BACKEND_URL = 'https://<tuo-backend>.onrender.com';
 
-        document.getElementById('loginForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const formData = new FormData(this);
-            const errorMessageDiv = document.getElementById('error-message');
-            errorMessageDiv.textContent = ''; // Resetta il messaggio di errore
+document.getElementById('loginForm').addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const formData = new FormData(this);
 
-            try {
-                const response = await fetch(`${BACKEND_URL}/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: formData.get('email'),
-                        password: formData.get('password')
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.user) {
-                    // Salva i dati utente nel localStorage
-                    localStorage.setItem('username', data.user.nome);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    localStorage.setItem('user_id', data.user.id);
-                    localStorage.setItem('token', data.token); // Salva il token JWT
-                    window.location.href = 'home.html'; // URL corretto per la home
-                } else {
-                    errorMessageDiv.textContent = data.error || 'Credenziali errate.';
-                    errorMessageDiv.style.color = 'red';
-                }
-            } catch (err) {
-                errorMessageDiv.textContent = 'Errore di connessione al server.';
-                errorMessageDiv.style.color = 'red';
-            }
+    try {
+        const response = await fetch(`${BACKEND_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: formData.get('email'),
+                password: formData.get('password')
+            })
         });
+
+        const data = await response.json();
+        if (response.ok) {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            window.location.href = 'home.html';
+        } else {
+            alert(data.error);
+        }
+    } catch (err) {
+        console.error('Errore:', err);
+        alert('Errore durante il login.');
+    }
+});
     </script>
 </body>
 </html>

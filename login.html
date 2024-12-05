@@ -46,7 +46,7 @@
                 localStorage.setItem('username', data.user.nome);
                 localStorage.setItem('user', JSON.stringify(data.user));
                 localStorage.setItem('user_id', data.user.id);
-                window.location.href = '/home.html';
+                window.location.href = '/https://feelingss.netlify.app/home';
             } else {
                 errorMessageDiv.textContent = data.error || 'Errore durante il login.';
                 errorMessageDiv.style.color = 'red';

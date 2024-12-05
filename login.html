@@ -24,14 +24,13 @@
     </div>
 
     <script>
-<script>
     document.getElementById('loginForm').addEventListener('submit', function(event) {
         event.preventDefault();
         const formData = new FormData(this);
         const errorMessageDiv = document.getElementById('error-message');
         errorMessageDiv.textContent = ''; // Resetta il messaggio di errore
 
-        fetch(`${BASE_URL}/auth/login`, {
+        fetch(`${https://server-xpxp.onrender.com }/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

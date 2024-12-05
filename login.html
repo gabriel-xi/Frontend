@@ -19,44 +19,46 @@
                 <div id="error-message"></div>
                 <button type="submit" class="btn dynamic-shadow">Accedi</button>
             </form>
-            <p>Non hai un account? <a href="https://feelingss.netlify.app/registrazione.html">Registrati</a></p>
+            <p>Non hai un account? <a href="registrazione.html">Registrati</a></p>
         </div>
     </div>
 
     <script>
-        const BACKEND_URL = 'https://server-xpxp.onrender.com'; // Cambia con il tuo URL Render
+        const BACKEND_URL = 'https://server-xpxp.onrender.com'; // Cambia con il tuo URL su Render
 
-        document.getElementById('loginForm').addEventListener('submit', function(event) {
+        document.getElementById('loginForm').addEventListener('submit', async function(event) {
             event.preventDefault();
             const formData = new FormData(this);
             const errorMessageDiv = document.getElementById('error-message');
             errorMessageDiv.textContent = ''; // Resetta il messaggio di errore
 
-            fetch(`${BACKEND_URL}/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: formData.get('email'),
-                    password: formData.get('password')
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.user) {
+            try {
+                const response = await fetch(`${BACKEND_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: formData.get('email'),
+                        password: formData.get('password')
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.user) {
                     // Salva i dati utente nel localStorage
                     localStorage.setItem('username', data.user.nome);
                     localStorage.setItem('user', JSON.stringify(data.user));
                     localStorage.setItem('user_id', data.user.id);
-                    window.location.href = 'https://feelingss.netlify.app/home.html'; // URL corretto di Netlify
+                    localStorage.setItem('token', data.token); // Salva il token JWT
+                    window.location.href = 'home.html'; // URL corretto per la home
                 } else {
-                    errorMessageDiv.textContent = data.error || 'Errore durante il login.';
+                    errorMessageDiv.textContent = data.error || 'Credenziali errate.';
                     errorMessageDiv.style.color = 'red';
                 }
-            })
-            .catch(err => {
+            } catch (err) {
                 errorMessageDiv.textContent = 'Errore di connessione al server.';
                 errorMessageDiv.style.color = 'red';
-            });
+            }
         });
     </script>
 </body>

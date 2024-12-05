@@ -247,141 +247,135 @@
         </div>
     </main>
     <script>
-    
-    document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', () => {
+    const BACKEND_URL = 'https://server-xpxp.onrender.com'; // URL del backend Render
+    const usernameSpan = document.querySelector('.username');
+    const username = localStorage.getItem('username');
+    usernameSpan.textContent = username;
 
+    const postsContainer = document.getElementById('postsContainer');
+    const postForm = document.getElementById('postForm');
+    const submitButton = postForm.querySelector('.btn');
+    const userId = localStorage.getItem('user_id');
 
-const usernameSpan = document.querySelector('.username');
-const username = localStorage.getItem('username');
-usernameSpan.textContent = username;
-
-const postsContainer = document.getElementById('postsContainer');
-const postForm = document.getElementById('postForm');
-const submitButton = postForm.querySelector('.btn');
-const userId = localStorage.getItem('user_id');
-
-
-function loadPosts() {
-    fetch(`/posts?userId=${userId}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    })
-    .then(res => {
-        if (!res.ok) throw new Error('Errore nel caricamento dei post');
-        return res.json();
-    })
-    .then(posts => {
-        postsContainer.innerHTML = posts.map(post => `
-            <div class="card">
-                <div class="info">
-                    <h3>${post.username}</h3>
-                    <small>${new Date(post.created_at).toLocaleString()}</small>
-                    <p>Mi sento: ${post.sentimento}</p>
-                    <p>Ti spiego: ${post.note}</p>
-                    <p>Mi piace: ${post.reazioni || 0}</p>
+    function loadPosts() {
+        fetch(`${BACKEND_URL}/posts?userId=${userId}`, {
+            headers: {
+                                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Errore nel caricamento dei post');
+            return res.json();
+        })
+        .then(posts => {
+            postsContainer.innerHTML = posts.map(post => `
+                <div class="card">
+                    <div class="info">
+                        <h3>${post.username}</h3>
+                        <small>${new Date(post.created_at).toLocaleString()}</small>
+                        <p>Mi sento: ${post.sentimento}</p>
+                        <p>Ti spiego: ${post.note}</p>
+                        <p>Mi piace: ${post.reazioni || 0}</p>
+                    </div>
+                    <button class="like-btn ${post.is_liked ? 'liked' : ''}" data-id="${post.id}">
+                        ${post.is_liked ? '👎 Non mi piace' : '👍 Mi piace'}
+                    </button>
+                    ${post.is_owner ? `<button class="delete-btn" data-id="${post.id}">🗑️ Elimina</button>` : ''}
                 </div>
-                            <button class="like-btn ${post.is_liked ? 'liked' : ''}" data-id="${post.id}">
-                ${post.is_liked ? '👎 Non mi piace' : '👍 Mi piace'}
-                </button>
-                ${post.is_owner ? `<button class="delete-btn" data-id="${post.id}">🗑️ Elimina</button>` : ''}
-            </div>
-        `).join('');
-        setTimeout(() => {
-            document.querySelectorAll('.card').forEach(card => card.classList.add('loaded'));
-        }, 100);
-    })
-    .catch(err => {
-        console.error('Errore nel caricamento dei post:', err);
+            `).join('');
+            setTimeout(() => {
+                document.querySelectorAll('.card').forEach(card => card.classList.add('loaded'));
+            }, 100);
+        })
+        .catch(err => {
+            console.error('Errore nel caricamento dei post:', err);
+        });
+    }
+
+    postsContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('like-btn')) {
+            const postId = e.target.getAttribute('data-id');
+            const isLiked = e.target.classList.contains('liked');
+            const action = isLiked ? 'unlike' : 'like';
+
+            fetch(`${BACKEND_URL}/posts/${postId}/reazioni`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ action })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    e.target.classList.toggle('liked');
+                    e.target.textContent = e.target.classList.contains('liked') ? '👎 Non mi piace' : '👍 Mi piace';
+                    e.target.closest('.card').querySelector('.info p:last-child').textContent = `Mi piace: ${data.reazioni}`;
+                }
+            })
+            .catch(err => console.error('Errore nella gestione del "mi piace":', err));
+        }
     });
-}
 
+    postsContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('delete-btn')) {
+            const postId = e.target.getAttribute('data-id');
 
-postsContainer.addEventListener('click', (e) => {
-    if (e.target.classList.contains('like-btn')) {
-        const postId = e.target.getAttribute('data-id');
-        const isLiked = e.target.classList.contains('liked');
-        const action = isLiked ? 'unlike' : 'like';
+            fetch(`${BACKEND_URL}/posts/${postId}?userId=${localStorage.getItem('user_id')}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    e.target.closest('.card').remove();
+                }
+            })
+            .catch(err => console.error('Errore nella cancellazione del post:', err));
+        }
+    });
 
-        fetch(`/posts/${postId}/reazioni`, {
+    postForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        submitButton.classList.add('loading');
+
+        const formData = new FormData(postForm);
+        fetch(`${BACKEND_URL}/posts`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ action })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-
-                e.target.classList.toggle('liked');
-                e.target.textContent = e.target.classList.contains('liked') ? '👎 Non mi piace' : '👍 Mi piace';
-                e.target.closest('.card').querySelector('.info p:last-child').textContent = `Mi piace: ${data.reazioni}`;;
-                
-            }
-        })
-        .catch(err => console.error('Errore nella gestione del "mi piace":', err));
-    }
-});
-
-
-postsContainer.addEventListener('click', (e) => {
-    if (e.target.classList.contains('delete-btn')) {
-        const postId = e.target.getAttribute('data-id');
-
-        fetch(`/posts/${postId}?userId=${localStorage.getItem('user_id')}`, {
-            method: 'DELETE',
-            headers: {
+                'Content-Type': 'application/json',
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
+            },
+            body: JSON.stringify({
+                id_user: userId,
+                sentimento: formData.get('sentimento'),
+                note: formData.get('note')
+            })
         })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                e.target.closest('.card').remove();
-            }
+        .then(response => {
+            if (!response.ok) throw new Error('Errore nella creazione del post');
+            return response.json();
         })
-        .catch(err => console.error('Errore nella cancellazione del post:', err));
-    }
-});
-
-
-postForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    submitButton.classList.add('loading');
-
-    const formData = new FormData(postForm);
-    fetch('/posts', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-            id_user: userId,
-            sentimento: formData.get('sentimento'),
-            note: formData.get('note')
+        .then(() => {
+            setTimeout(() => {
+                submitButton.classList.remove('loading');
+                postForm.reset();
+                loadPosts();
+            }, 1000);
         })
-    })
-    .then(response => {
-        if (!response.ok) throw new Error('Errore nella creazione del post');
-        return response.json();
-    })
-    .then(() => {
-        setTimeout(() => {
+        .catch(err => {
             submitButton.classList.remove('loading');
-            postForm.reset();
-            loadPosts();
-        }, 1000);
-    })
-    .catch(err => {
-        submitButton.classList.remove('loading');
-        console.error('Errore durante la creazione del post:', err);
+            console.error('Errore durante la creazione del post:', err);
+        });
     });
-});
 
-
-loadPosts();
+    loadPosts();
 });
+    
     </script>
 </body>
 </html>
